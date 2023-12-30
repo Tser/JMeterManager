@@ -1,0 +1,2 @@
+# JmeterManager
+JMeterManager（JMeter管理者）协助新用户可以安装不同版本的环境且可以方便快捷的在不同版本之间切换
