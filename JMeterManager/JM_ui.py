@@ -196,14 +196,14 @@ class JMeterManagerUI(tk.Tk):
         self.settings_install_button.grid(row=0, column=2, padx=5, pady=10)
 
         # row_4_frame:保存
-        self.settings_save_button = tk.Button(
-                                                row_4_frame,
-                                                text="保   存",
-                                                command=self.save_settings,
-                                                width=10,
-                                                fg="white",
-                                                bg="green")
-        self.settings_save_button.pack(side="bottom")
+        # self.settings_save_button = tk.Button(
+        #                                         row_4_frame,
+        #                                         text="保   存",
+        #                                         command=self.save_settings,
+        #                                         width=10,
+        #                                         fg="white",
+        #                                         bg="green")
+        # self.settings_save_button.pack(side="bottom")
 
         # row_5_frame:状态信息
         self.settings_message_text = tk.StringVar()
@@ -281,6 +281,8 @@ class JMeterManagerUI(tk.Tk):
 
     def choose_install_path(self):
         ''' 选择安装JMeter的文件夹 '''
+        dirName = filedialog.askdirectory(initialdir='~/Download/', title="请选择下载路径")
+        self.settings_download_path.set(dirName) if dirName else self.settings_download_path.set("请选择下载路径...")
 
 
     def save_settings(self):
