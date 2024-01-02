@@ -48,13 +48,14 @@ def CF_INIT():
         cf.set('install', 'archive_versions', '[]')
         cf.set('install', 'mirror_versions', '[]')
         cf.add_section('installed')
+        cf.set('installed', 'jmeter_paths', '[]')
         cf.set('installed', 'versions', '[]')
         cf.add_section('settings')
         cf.set('settings', 'download_urls', "['https://archive.apache.org/dist/jmeter/binaries/', " + \
                                            "'https://mirrors.aliyun.com/apache/jmeter/binaries/', " + \
                                            "'https://mirrors.tuna.tsinghua.edu.cn/apache/jmeter/binaries/']")
-        cf.set('settings', 'download_path', '~/Downloads/')
-        cf.set('settings', 'install_path', '~/Desktop/')
+        cf.set('settings', 'download_path', os.path.expanduser('~/Downloads/'))
+        cf.set('settings', 'install_path', os.path.expanduser('~/Desktop/'))
 
         cf.write(open(JM_INI_PATH, 'w', encoding='utf-8'))
     return cf
