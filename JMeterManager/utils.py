@@ -47,14 +47,15 @@ def GET_JMETER_PATH_LIST() -> list:
     path_list = []
     cf.read(JM_INI_PATH, encoding='utf-8')
     _t = threading.Thread(target=finder_thread, args=(f"{cf.get('settings', 'install_path')}/**/jmeter.bat",))
+    # _t.setDaemon(True)
     _t.start()
     _t.join()
     return path_list
 
-def SET_JMETER_INSTALLED_VERSION():
+def SET_JMETER_INSTALLED_VERSION(status):
     ''' 获取基本存在所有JMeter安装版本 '''
-
     jmeter_version_list = set()
+    status.set('正在获取已安装版本...')
     for file_full_path in GET_JMETER_PATH_LIST():
         file_path = os.path.dirname(file_full_path)
         CMD = f'cd /d "{file_path}" && jmeter -v' if _SYSTEM_NAME_ == 'Windows' else f'cd {file_path} && jmeter -v'
@@ -65,29 +66,38 @@ def SET_JMETER_INSTALLED_VERSION():
             with open(f'{file_path}/jmeter.log', 'r') as f: data = f.readlines(); f.close()
             jmeter_version_list.add(str(findall(': Version (.+)\n$', [d for d in data if ': Version ' in d][0])[0]).strip())
         except PermissionError:
-            raise PermissionError('没有足够的权限执行命令!')
+            status.set('没有足够的权限执行命令!')
+            # raise PermissionError('没有足够的权限执行命令!')
         except IndexError:
-            pass
+            status.set('版本号获取失败!')
+    if not jmeter_version_list: jmeter_version_list = set()
     cf.set('installed', 'versions', str(list(jmeter_version_list)))
     cf.write(open(JM_INI_PATH, 'w', encoding='utf-8'))
+    status.set('安装版本检测完成!')
 
-def SET_JMETER_INSTALL_VERSIONS():
+def SET_JMETER_INSTALL_VERSIONS(status):
     ''' 解析URL获取可下载的所有版本 '''
+    status.set('正在获取全部版本号...')
     cf.read(JM_INI_PATH, encoding='utf-8')
     urls_url = cf.get('settings', 'download_urls')
     for url in eval(urls_url):
-        HtmlResponse = urlopen(
-                            Request(
-                                url,
-                                headers={
-                                    'User-Agent':
-                                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '+\
-                                        'Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0'
-                                })
-                            ).read().decode('utf-8')
-        versions = findall('<a href="apache-jmeter-(.+).zip"', HtmlResponse)
-
-        cf.set('install', 'archive_versions', str(versions)) \
-                if url.startswith('https://archive.apache.org') \
-                else cf.set('install', 'mirror_versions', str(versions))
-        cf.write(open(JM_INI_PATH, 'w', encoding='utf-8'))
+        try:
+            HtmlResponse = urlopen(
+                                Request(
+                                    url,
+                                    headers={
+                                        'User-Agent':
+                                            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '+\
+                                            'Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0'
+                                    })
+                                ).read().decode('utf-8')
+            versions = findall('<a href="apache-jmeter-(.+).zip"', HtmlResponse)
+            versions.sort(reverse=True)
+            cf.set('install', 'archive_versions', str(versions)) \
+                    if url.startswith('https://archive.apache.org') \
+                    else cf.set('install', 'mirror_versions', str(versions))
+            cf.write(open(JM_INI_PATH, 'w', encoding='utf-8'))
+            status.set('版本号获取已完成!')
+        except Exception as e:
+            status.set(f'获取版本号失败! {e}')
+            break

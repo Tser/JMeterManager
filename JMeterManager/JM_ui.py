@@ -13,13 +13,15 @@ from __init__ import ttk, \
                         PIPE, \
                         STDOUT, \
                         Progressbar, \
+                        PhotoImage, \
                         tk, \
                         CF_INIT, \
                         urlretrieve, \
                         filedialog, \
                         os, \
+                        FAVICON_PATH, \
+                        BG_IMAGE_PATH, \
                         JM_INI_PATH, \
-                        main_requires_admin, \
                         CreateKey, \
                         OpenKey, \
                         QueryValueEx, \
@@ -40,6 +42,9 @@ class JMeterManagerUI(tk.Tk):
         super().__init__(*args, **kwargs)
         self.title_text = "JMeterManager·@xiaobaiTser v1.0.0      "
         self.title(self.title_text)
+        self.iconbitmap(FAVICON_PATH)
+        # self.style = ttk.Style()
+        # self.style.configure('TFrame', background='white')
         # 窗口设置为自适应
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
@@ -47,28 +52,32 @@ class JMeterManagerUI(tk.Tk):
         self.cf = CF_INIT()
         self.cf.read(JM_INI_PATH, encoding='utf-8')
         self.operate_message_text = tk.StringVar()
-        self.settings_message_text = tk.StringVar()
+        self.settings_message_text = self.operate_message_text
         self.create_widgets()
-
-        # 更新数据
-        self.operate_message_text.set('正在更新可安装版本号')
-        self.settings_message_text.set('正在更新可安装版本号')
-        threading.Thread(target=SET_JMETER_INSTALL_VERSIONS).start()
-        self.operate_message_text.set('已完成更新可安装版本号')
-        self.settings_message_text.set('已完成更新可安装版本号')
-        self.operate_message_text.set('正在检测已安装版本号')
-        self.settings_message_text.set('正在检测已安装版本号')
-        threading.Thread(target=SET_JMETER_INSTALLED_VERSION).start()
-        self.operate_message_text.set('已完成已安装版本号检测')
-        self.settings_message_text.set('已完成已安装版本号检测')
-
         self.run()
         self.after(500, self.title_refresh)
         self.mainloop()
 
     def run(self):
+        ''' 初始化 '''
+        CF_INIT()
+        self.check_install_list()
+        self.check_installed_list()
         # 监控关闭窗口事件，防止卡线程
         self.protocol('WM_DELETE_WINDOW', self.window_close)
+
+    def check_install_list(self):
+        '''  获取可安装的版本号列表 '''
+        _t1 = threading.Thread(target=SET_JMETER_INSTALL_VERSIONS, args=(self.operate_message_text,))
+        _t1.setDaemon(True)
+        _t1.start()
+
+    def check_installed_list(self):
+        '''  获取已安装的版本号列表 '''
+        _t2 = threading.Thread(target=SET_JMETER_INSTALLED_VERSION, args=(self.operate_message_text,))
+        _t2.setDaemon(True)
+        _t2.start()
+        # _t2.join()
 
     def window_close(self):
         self.destroy()
@@ -83,10 +92,10 @@ class JMeterManagerUI(tk.Tk):
         '''
         self.tab_control = ttk.Notebook(self)
         self.tab_control.pack(expand=1, fill="both")
-        self.operate = ttk.Frame(self.tab_control)
-        self.settings = ttk.Frame(self.tab_control)
-        self.tab_control.add(self.operate, text="操 作")
-        self.tab_control.add(self.settings, text="设 置")
+        self.operate = ttk.Frame(self.tab_control, style='TFrame')
+        self.settings = ttk.Frame(self.tab_control, style='TFrame')
+        self.tab_control.add(self.operate, text="操 作", )# padding=10, image=PhotoImage(file=BG_IMAGE_PATH))
+        self.tab_control.add(self.settings, text="设 置", )# padding=10, image=PhotoImage(file=BG_IMAGE_PATH))
         self.tab_control.pack(expand=1, fill="both")
         self.create_operate()
         self.create_settings()
@@ -104,10 +113,10 @@ class JMeterManagerUI(tk.Tk):
         row_4_frame.pack()
 
         # row_1_frame
-        self.operate_install_label = tk.Label(row_1_frame, text="可安装版本号：")
+        self.operate_install_label = tk.Label(row_1_frame, text="可安装版本：")
         self.operate_install_label.grid(row=0, column=0, padx=5, pady=10)
         self.operate_install_version = tk.StringVar()
-        self.operate_install_version.set("未选择")
+        self.operate_install_version.set("未选择...")
 
         # 可安装版本随着下载地址的改变而变化
         self.install_versions = eval(self.cf.get('install', 'archive_versions'))
@@ -128,10 +137,10 @@ class JMeterManagerUI(tk.Tk):
         self.operate_download_button.grid(row=0, column=2, padx=5, pady=10)
 
         # row_2_frame
-        self.operate_installed_label = tk.Label(row_2_frame, text="可卸载装版本：")
+        self.operate_installed_label = tk.Label(row_2_frame, text="已安装版本：")
         self.operate_installed_label.grid(row=1, column=0, padx=5, pady=10)
         self.operate_installed_version = tk.StringVar()
-        self.operate_installed_version.set("可卸载版本号")
+        self.operate_installed_version.set("未选择...")
         self.operate_installed_version_list = ttk.Combobox(
                                             row_2_frame,
                                             values=eval(self.cf.get('installed', 'versions')),
@@ -258,7 +267,9 @@ class JMeterManagerUI(tk.Tk):
     def title_refresh(self):
         ''' 实时更新标题，类似于跑马灯 '''
         try:
-            threading.Thread(target=self.title_refresh_thread).start()
+            _t3 = threading.Thread(target=self.title_refresh_thread)
+            _t3.setDaemon(True)
+            _t3.start()
         except RuntimeError:
             pass
 
@@ -283,18 +294,25 @@ class JMeterManagerUI(tk.Tk):
         ''' 设置系统环境，windows使用winreg,linux使用/etc/profile '''
         env_name = env_name.upper().strip()
         if _SYSTEM_NAME_ == "Windows":
-            REG_PATH = r'SYSTEM\\ControlSet001\\Control\\Session Manager\\Environment'
-            write_env_key = OpenKey(HKEY_LOCAL_MACHINE, REG_PATH, 0, access=KEY_ALL_ACCESS)
-            path_env = QueryValueEx(write_env_key, 'path')[0]
-
+            # REG_PATH = r'SYSTEM\\ControlSet001\\Control\\Session Manager\\Environment'
+            # write_env_key = OpenKey(HKEY_LOCAL_MACHINE, REG_PATH, 0, access=KEY_ALL_ACCESS)
+            # path_env = QueryValueEx(write_env_key, 'path')[0]
+            #
+            # if env_name:
+            #     # add key
+            #     SetValueEx(write_env_key, env_name, 0, REG_SZ, env_path)
+            # if add_path:
+            #     env_value = f'{path_env};%{env_name}%{end_path}' if env_name else f'{path_env};{env_path}'
+            #     SetValueEx(write_env_key, 'path', 0, REG_EXPAND_SZ, env_value)
+            # CloseKey(write_env_key)
+            # self.refresh_system_environment()
             if env_name:
-                # add key
-                SetValueEx(write_env_key, env_name, 0, REG_SZ, env_path)
+                r = os.popen(f'setx {env_name} {env_path}')
+                print(r.read())
             if add_path:
-                env_value = f'{path_env};%{env_name}%{end_path}' if env_name else f'{path_env};{env_path}'
-                SetValueEx(write_env_key, 'path', 0, REG_EXPAND_SZ, env_value)
-            CloseKey(write_env_key)
-            self.refresh_system_environment()
+                CMD = f'setx Path ~Path~;%{env_path}%{end_path}' if end_path else f'setx Path %Path%;{env_path}'
+                r=os.popen(CMD)
+                print(r.read())
         else:
             # 添加环境变量到/etc/profile并执行source命令
             if env_name:
@@ -319,10 +337,12 @@ class JMeterManagerUI(tk.Tk):
     def download_thread(self):
         ''' 下载线程 '''
         _version = self.operate_install_version.get()
-        if _version == "未选择":
+        if not eval(self.cf.get('installed', 'versions')):
+            self.check_installed_list()
+        if _version in ["未选择...", '']:
             self.operate_message_text.set("请选择版本号!")
         elif _version in eval(self.cf.get('installed', 'versions')):
-            self.operate_message_text.set("版本已安装! 请选择其它版本")
+            self.operate_message_text.set("版本已安装!")
         else:
             urlretrieve(self.settings_mirror_url.get() +
                         f'/apache-jmeter-{self.operate_install_version.get()}.zip',
@@ -345,6 +365,7 @@ class JMeterManagerUI(tk.Tk):
             self.cf.read(JM_INI_PATH, encoding='utf-8')
             old_versions = eval(self.cf.get('installed', 'versions'))
             new_versions = old_versions.append(self.operate_install_version.get())
+            if new_versions: new_versions.sort(reverse=True)
             self.cf.set('installed', 'versions', str(new_versions))
             self.cf.write(open(JM_INI_PATH, 'w', encoding='utf-8'))
             # 在已安装列表中添加刚刚安装的版本号
@@ -371,16 +392,18 @@ class JMeterManagerUI(tk.Tk):
 
     def download_jmeter(self):
         ''' 基于镜像URL下载JMeter '''
-        if self.operate_install_version.get() == "未选择":
+        if self.operate_install_version.get() in ["未选择...", '']:
             self.operate_message_text.set("操作 >> 请选择版本号!")
-        elif self.settings_mirror_url.get() == "请选择镜像站...":
+        elif self.settings_mirror_url.get() in ["未选择...", '']:
             self.operate_message_text.set("设置 >> 请选择镜像站!")
-        elif self.settings_download_path.get() == "请选择下载路径...":
+        elif self.settings_download_path.get() in ["未选择...", '']:
             self.operate_message_text.set("设置 >> 请选择下载路径!")
-        elif self.settings_install_path.get() == "请选择安装路径...":
+        elif self.settings_install_path.get() in ["未选择...", '']:
             self.operate_message_text.set("设置 >> 请选择安装路径!")
         else:
-            threading.Thread(target=self.download_thread).start()
+            _t4 = threading.Thread(target=self.download_thread)
+            _t4.setDaemon(True)
+            _t4.start()
             self.operate_message_text_label.config(fg="green")
             self.operate_message_text.set("下载中...")
 
@@ -430,17 +453,13 @@ class JMeterManagerUI(tk.Tk):
     def choose_install_path(self):
         ''' 选择安装JMeter的文件夹 '''
         self.cf.read(JM_INI_PATH, encoding='UTF-8')
-        dirName = filedialog.askdirectory(initialdir='~/Desktop/', title="请选择安装/解压路径")
+        dirName = filedialog.askdirectory(initialdir=self.cf.get('settings', 'install_path'), title="请选择安装/解压路径")
         if dirName:
             self.settings_install_path.set(dirName)
             self.cf.set('settings', 'install_path', dirName)
             self.cf.write(open(JM_INI_PATH, 'w', encoding='utf-8'))
             # 更新安装版本检测
-            self.operate_message_text.set("检测已安装版本中...")
-            self.settings_message_text.set("检测已安装版本中...")
-            threading.Thread(target=SET_JMETER_INSTALLED_VERSION()).start()
-            self.operate_message_text.set("已完成已安装版本检测")
-            self.settings_message_text.set("已完成已安装版本检测")
+            self.check_installed_list()
         else:
             self.settings_install_path.set(self.cf.get('settings', 'install_path'))
 

@@ -12,15 +12,13 @@ from configparser import ConfigParser
 
 import os, sys, platform, glob, threading, tkinter as tk, ctypes
 
-from tkinter import filedialog, messagebox, ttk
+from tkinter import filedialog, messagebox, ttk, PhotoImage
 
 from tkinter.ttk import Progressbar
 
 from subprocess import Popen, PIPE, STDOUT
 
 from urllib.request import urlretrieve, urlopen, Request
-
-from pyuac import main_requires_admin
 
 from time import sleep
 
@@ -31,6 +29,10 @@ from winreg import OpenKey, QueryValueEx, SetValueEx, HKEY_LOCAL_MACHINE, KEY_WR
 
 CUR_DIR = os.path.dirname(os.path.realpath(__file__))
 
+FAVICON_PATH = os.path.join(CUR_DIR, 'image/favicon.ico')
+
+BG_IMAGE_PATH = os.path.join(CUR_DIR, 'image/bg.png')
+
 JM_INI_PATH = os.path.join(CUR_DIR, 'jm_ui.ini')
 
 def CF_INIT():
@@ -40,7 +42,7 @@ def CF_INIT():
         cf.add_section('current')
         cf.set('current', 'jdk_version', '')
         cf.set('current', 'jmeter_version', '')
-        cf.set('current', 'jmeter_path', '')
+        cf.set('current', 'jmeter_home', '')
         cf.set('current', 'jmeter_plugin_version', '')
         cf.add_section('install')
         cf.set('install', 'archive_versions', '[]')
