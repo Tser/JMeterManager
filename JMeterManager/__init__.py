@@ -3,13 +3,14 @@
 '''
 @Author: xiaobaiTser
 @Time  : 2023/12/30 23:44
-@File  : __init__.py.py
+@File  : __init__.py
 '''
 
+from zipfile import ZipFile
 
 from configparser import ConfigParser
 
-import os, sys, platform, glob, threading, tkinter as tk
+import os, sys, platform, glob, threading, tkinter as tk, ctypes
 
 from tkinter import filedialog, messagebox, ttk
 
@@ -19,14 +20,23 @@ from subprocess import Popen, PIPE, STDOUT
 
 from urllib.request import urlretrieve, urlopen, Request
 
+from pyuac import main_requires_admin
+
 from time import sleep
 
 from re import findall
 
+from winreg import OpenKey, QueryValueEx, SetValueEx, HKEY_LOCAL_MACHINE, KEY_WRITE, REG_SZ, REG_EXPAND_SZ, CreateKey, \
+    CloseKey, KEY_ALL_ACCESS
+
+CUR_DIR = os.path.dirname(os.path.realpath(__file__))
+
+JM_INI_PATH = os.path.join(CUR_DIR, 'jm_ui.ini')
+
 def CF_INIT():
     ''' 初始化配置文件 '''
     cf = ConfigParser()
-    if not os.path.exists('jm_ui.ini'):
+    if not os.path.exists(JM_INI_PATH):
         cf.add_section('current')
         cf.set('current', 'jdk_version', '')
         cf.set('current', 'jmeter_version', '')
@@ -41,8 +51,8 @@ def CF_INIT():
         cf.set('settings', 'download_urls', "['https://archive.apache.org/dist/jmeter/binaries/', " + \
                                            "'https://mirrors.aliyun.com/apache/jmeter/binaries/', " + \
                                            "'https://mirrors.tuna.tsinghua.edu.cn/apache/jmeter/binaries/']")
-        cf.set('settings', 'download_path', '~\\Desktop')
-        cf.set('settings', 'install_path', 'C:\\Program Files\\JMeter')
+        cf.set('settings', 'download_path', '~/Downloads/')
+        cf.set('settings', 'install_path', '~/Desktop/')
 
-        cf.write(open('jm_ui.ini', 'w', encoding='utf-8'))
+        cf.write(open(JM_INI_PATH, 'w', encoding='utf-8'))
     return cf
