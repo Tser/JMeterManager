@@ -6,7 +6,8 @@
 @File  : utils.py
 '''
 
-from JMeterManager import os, \
+from __init__ import os, \
+                        JM_INI_PATH, \
                         platform, \
                         glob, \
                         threading, \
@@ -36,25 +37,23 @@ def GET_SYSTEM_DEVICES_LIST() -> list:
             if i.replace(' ', '').replace('\n', '') != '']
 
 def finder_thread(path: str):
-    lock.acquire()   # 锁住资源，防止多线程同时操作合并列表
+    # lock.acquire()   # 锁住资源，防止多线程同时操作合并列表
     path_list.extend(glob.glob(path, recursive=True))
-    lock.release()  # 释放资源
+    # lock.release()  # 释放资源
 
 def GET_JMETER_PATH_LIST() -> list:
-    ''' 获取JMeter路径列表 '''
+    ''' 在指定安装路径下获取JMeter的列表 '''
     global path_list
     path_list = []
-    if _SYSTEM_NAME_ == 'Windows':
-        for device in GET_SYSTEM_DEVICES_LIST():
-            t = threading.Thread(target=finder_thread, args=(f'{device}\\**\\jmeter.bat',))
-            t.start()
-            t.join()
-    else:
-        path_list.extend(glob.glob('**/jmeter.sh', recursive=True))
+    cf.read(JM_INI_PATH, encoding='utf-8')
+    _t = threading.Thread(target=finder_thread, args=(f"{cf.get('settings', 'install_path')}/**/jmeter.bat",))
+    _t.start()
+    _t.join()
     return path_list
 
 def SET_JMETER_INSTALLED_VERSION():
     ''' 获取基本存在所有JMeter安装版本 '''
+
     jmeter_version_list = set()
     for file_full_path in GET_JMETER_PATH_LIST():
         file_path = os.path.dirname(file_full_path)
@@ -62,17 +61,19 @@ def SET_JMETER_INSTALLED_VERSION():
         try:
             Popen(CMD, shell=True, stdout=PIPE, stderr=STDOUT, encoding='utf-8')
             _timeout_ = 10
-            while not os.path.exists('{file_path}/jmeter.log') and _timeout_ >= 0: sleep(0.5); _timeout_ -= 0.5
+            while not os.path.exists(f'{file_path}/jmeter.log') and _timeout_ >= 0: sleep(0.5); _timeout_ -= 0.5
             with open(f'{file_path}/jmeter.log', 'r') as f: data = f.readlines(); f.close()
             jmeter_version_list.add(str(findall(': Version (.+)\n$', [d for d in data if ': Version ' in d][0])[0]).strip())
         except PermissionError:
             raise PermissionError('没有足够的权限执行命令!')
+        except IndexError:
+            pass
     cf.set('installed', 'versions', str(list(jmeter_version_list)))
-    cf.write(open('jm_ui.ini', 'w', encoding='utf-8'))
+    cf.write(open(JM_INI_PATH, 'w', encoding='utf-8'))
 
 def SET_JMETER_INSTALL_VERSIONS():
     ''' 解析URL获取可下载的所有版本 '''
-    cf.read('jm_ui.ini', encoding='utf-8')
+    cf.read(JM_INI_PATH, encoding='utf-8')
     urls_url = cf.get('settings', 'download_urls')
     for url in eval(urls_url):
         HtmlResponse = urlopen(
@@ -89,4 +90,4 @@ def SET_JMETER_INSTALL_VERSIONS():
         cf.set('install', 'archive_versions', str(versions)) \
                 if url.startswith('https://archive.apache.org') \
                 else cf.set('install', 'mirror_versions', str(versions))
-        cf.write(open('jm_ui.ini', 'w', encoding='utf-8'))
+        cf.write(open(JM_INI_PATH, 'w', encoding='utf-8'))
