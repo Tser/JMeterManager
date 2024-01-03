@@ -61,7 +61,7 @@ def SET_JMETER_INSTALLED_VERSION(status) -> None:
     version_list = []
     cf.read(JM_INI_PATH, encoding='utf-8')
     _t = threading.Thread(target=finder_thread, args=(cf.get('settings', 'install_path'), path_list, version_list))
-    _t.setDaemon(True)
+    # _t.setDaemon(True)
     _t.start()
     _t.join()
     cf.set('installed', 'jmeter_paths', str(path_list))
@@ -71,10 +71,11 @@ def SET_JMETER_INSTALLED_VERSION(status) -> None:
 
 def SET_JMETER_INSTALL_VERSIONS(status):
     ''' 解析URL获取可下载的所有版本 '''
+    print('开始解析URL获取可下载的所有版本')
     status.set('正在获取全部版本号...')
     cf.read(JM_INI_PATH, encoding='utf-8')
     urls_url = cf.get('settings', 'download_urls')
-    for url in list(urls_url):
+    for url in eval(urls_url):
         try:
             HtmlResponse = urlopen(
                                 Request(
@@ -86,12 +87,14 @@ def SET_JMETER_INSTALL_VERSIONS(status):
                                     })
                                 ).read().decode('utf-8')
             versions = findall('<a href="apache-jmeter-(.+).zip"', HtmlResponse)
-            versions.sort(reverse=True)
+            # versions.sort(reverse=True)
             cf.set('install', 'archive_versions', str(versions)) \
                     if url.startswith('https://archive.apache.org') \
                     else cf.set('install', 'mirror_versions', str(versions))
             cf.write(open(JM_INI_PATH, 'w', encoding='utf-8'))
             status.set('版本号获取已完成!')
+            print('版本号获取已完成!')
         except Exception as e:
             status.set(f'获取版本号失败! {e}')
+            print(f'获取版本号失败! {e}')
             break
