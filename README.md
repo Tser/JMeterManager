@@ -11,7 +11,7 @@ JMeterManagerUI
 ```  
 ------
 ### 界面介绍
-![操作界面](https://github.com/Tser/JMeterManager/blob/02e619f301ce4c0df28ad2b3dd875582a7b61812/JMeterManager/image/gui_operate.jpg?raw=true "操作界面")
+![操作界面](https://github.com/Tser/JMeterManager/blob/02e619f301ce4c0df28ad2b3dd875582a7b61812/JMeterManager/image/gui_operate.png?raw=true "操作界面")
 
 #### 操作界面：
 - 可安装版本
