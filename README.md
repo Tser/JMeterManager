@@ -10,8 +10,9 @@ JMeterManagerUI
 默认会在当前目录生成数据文件jm_ui.ini，请勿随意修改
 ```  
 ------
+
 ### 界面介绍
-![操作界面](https://github.com/Tser/JMeterManager/blob/02e619f301ce4c0df28ad2b3dd875582a7b61812/JMeterManager/image/gui_operate.png?raw=true "操作界面")
+![操作界面](https://github.com/Tser/JMeterManager/blob/2361b39070a507ab440f1430fe5a30736eaa723c/JMeterManager/image/gui_operate.png?raw=true "操作界面")
 
 #### 操作界面：
 - 可安装版本
