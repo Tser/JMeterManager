@@ -43,15 +43,18 @@ def finder_thread(path: str, path_list: list, version_list: list) -> None:
     for dirpath, dirnames, filenames in os.walk(path):
         for filename in filenames:
             if filename == 'jmeter.bat':
-                CMD = f'cd /d "{dirpath}" && jmeter -v' if _SYSTEM_NAME_ == 'Windows' else f'cd {dirpath} && jmeter -v'
-                Popen(CMD, stdout=PIPE, shell=True,  stderr=STDOUT,encoding='utf-8')
-                _timeout_ = 2
-                while not os.path.exists(f'{dirpath}/jmeter.log') and _timeout_ >= 0: sleep(0.5); _timeout_ -= 0.5
-                if os.path.exists(f'{dirpath}/jmeter.log'):
-                    with open(f'{dirpath}/jmeter.log', 'r') as f: data = f.readlines(); f.close()
-                    v = str(findall(': Version (.+)\n$', [d for d in data if ': Version ' in d][0])[0]).strip()
-                version_list.append(v)
-                path_list.append(os.path.join(dirpath, filename))
+                try:
+                    CMD = f'cd /d "{dirpath}" && jmeter -v' if _SYSTEM_NAME_ == 'Windows' else f'cd {dirpath} && jmeter -v'
+                    Popen(CMD, stdout=PIPE, shell=True,  stderr=STDOUT,encoding='utf-8')
+                    _timeout_ = 2
+                    while not os.path.exists(f'{dirpath}/jmeter.log') and _timeout_ >= 0: sleep(0.5); _timeout_ -= 0.5
+                    if os.path.exists(f'{dirpath}/jmeter.log'):
+                        with open(f'{dirpath}/jmeter.log', 'r') as f: data = f.readlines(); f.close()
+                        v = str(findall(': Version (.+)\n$', [d for d in data if ': Version ' in d][0])[0]).strip()
+                    version_list.append(v)
+                    path_list.append(os.path.join(dirpath, filename))
+                except Exception as e:
+                    pass
     # lock.release()  # 释放资源
 
 def SET_JMETER_INSTALLED_VERSION(status) -> None:
