@@ -71,7 +71,6 @@ def SET_JMETER_INSTALLED_VERSION(status) -> None:
 
 def SET_JMETER_INSTALL_VERSIONS(status):
     ''' 解析URL获取可下载的所有版本 '''
-    print('开始解析URL获取可下载的所有版本')
     status.set('正在获取全部版本号...')
     cf.read(JM_INI_PATH, encoding='utf-8')
     urls_url = cf.get('settings', 'download_urls')
@@ -93,8 +92,6 @@ def SET_JMETER_INSTALL_VERSIONS(status):
                     else cf.set('install', 'mirror_versions', str(versions))
             cf.write(open(JM_INI_PATH, 'w', encoding='utf-8'))
             status.set('版本号获取已完成!')
-            print('版本号获取已完成!')
         except Exception as e:
             status.set(f'获取版本号失败! {e}')
-            print(f'获取版本号失败! {e}')
             break
