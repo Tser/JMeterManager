@@ -26,8 +26,6 @@ from __init__ import os, \
 
 _SYSTEM_NAME_ = platform.system()  # Windows、Linux、Darwin、Java...
 
-lock = threading.Lock()
-
 cf = CF_INIT()
 
 def GET_SYSTEM_DEVICES_LIST() -> list:
@@ -37,7 +35,7 @@ def GET_SYSTEM_DEVICES_LIST() -> list:
             if i.replace(' ', '').replace('\n', '') != '']
 
 def finder_thread(path: str, path_list: list, version_list: list) -> None:
-    # lock.acquire()   # 锁住资源，防止多线程同时操作合并列表
+    ''' 多线程查找文件 '''
     # path_list.extend(glob.glob(path, recursive=True))
     v = ''
     for dirpath, dirnames, filenames in os.walk(path):
@@ -55,7 +53,6 @@ def finder_thread(path: str, path_list: list, version_list: list) -> None:
                     path_list.append(os.path.join(dirpath, filename))
                 except Exception as e:
                     pass
-    # lock.release()  # 释放资源
 
 def SET_JMETER_INSTALLED_VERSION(status) -> None:
     ''' 在指定安装路径下获取JMeter的列表 '''
