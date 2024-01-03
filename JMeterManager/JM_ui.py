@@ -60,7 +60,11 @@ class JMeterManagerUI(tk.Tk):
         ''' 初始化 '''
         CF_INIT()
         self.check_install_list()
+        self.refresh_install_version_data()
         self.check_installed_list()
+        self.refresh_installed_version_data()
+        self.download_lock = 1
+        self.remove_lock = 1
         # 监控关闭窗口事件，防止卡线程
         self.protocol('WM_DELETE_WINDOW', self.window_close)
 
@@ -152,7 +156,7 @@ class JMeterManagerUI(tk.Tk):
                                             width=15,
                                             bg="white",
                                             fg="red",
-                                            state="disabled"
+                                            # state="disabled"
                                             )
         self.operate_remove_button.grid(row=1, column=2, padx=5, pady=10)
 
@@ -186,7 +190,7 @@ class JMeterManagerUI(tk.Tk):
         self.cf.read(JM_INI_PATH, encoding='utf-8')
 
         # row_1_frame:镜像
-        self.settings_mirror_label = tk.Label(row_1_frame, text="请选择镜像站：")
+        self.settings_mirror_label = tk.Label(row_1_frame, text="镜像站：")
         self.settings_mirror_label.grid(row=0, column=0, padx=10, pady=10)
         self.settings_mirror_url = tk.StringVar()
         self.settings_mirror_url.set(eval(self.cf.get('settings', 'download_urls'))[0])
@@ -200,7 +204,7 @@ class JMeterManagerUI(tk.Tk):
         self.settings_mirror_url_list.grid(row=0, column=1, padx=5, pady=10)
 
         # row_2_frame:下载路径
-        self.settings_download_path_label = tk.Label(row_2_frame, text="请选择下载路径：")
+        self.settings_download_path_label = tk.Label(row_2_frame, text="下载路径：")
         self.settings_download_path_label.grid(row=0, column=0, padx=5, pady=10)
         self.settings_download_path = tk.StringVar()
         self.settings_download_path.set(self.cf.get('settings', 'download_path'))
@@ -218,7 +222,7 @@ class JMeterManagerUI(tk.Tk):
         self.settings_download.grid(row=0, column=2, padx=5, pady=10)
 
         # row_3_frame:安装路径
-        self.settings_install_path_label = tk.Label(row_3_frame, text="请选择安装路径：")
+        self.settings_install_path_label = tk.Label(row_3_frame, text="安装路径：")
         self.settings_install_path_label.grid(row=0, column=0, padx=5, pady=10)
         self.settings_install_path = tk.StringVar()
         self.settings_install_path.set(self.cf.get('settings', 'install_path'))
@@ -370,8 +374,6 @@ class JMeterManagerUI(tk.Tk):
             if new_versions: new_versions.sort(reverse=True)
             self.cf.set('installed', 'versions', str(new_versions))
             self.cf.write(open(JM_INI_PATH, 'w', encoding='utf-8'))
-            # 在已安装列表中添加刚刚安装的版本号
-            self.refresh_installed_version_data()
 
             # 将默认语言改为中文(只有第一次安装的需要设置)
             JMETER_PROPERTIES_PATH = f'{self.settings_install_path.get()}/apache-jmeter-{self.operate_install_version.get()}/bin/jmeter.properties'
@@ -389,6 +391,10 @@ class JMeterManagerUI(tk.Tk):
             end_path='/bin'
         )
 
+        # 在已安装列表中添加刚刚安装的版本号
+        self.check_installed_list()
+        self.refresh_installed_version_data()
+
         # 更新当前版本为新安装版本
         cmd_result = [v for v in Popen('java -version', shell=True, stdout=PIPE, stderr=STDOUT, encoding='utf-8').stdout.readlines() if 'version' in v][0].split(' ')
         jdk_version = [v for v in cmd_result if '.' in v][0]
@@ -396,21 +402,26 @@ class JMeterManagerUI(tk.Tk):
         self.cf.set('current', 'jmeter_version', self.operate_install_version.get())
         self.cf.set('current', 'jmeter_home', f'{self.settings_install_path.get()}/apache-jmeter-{self.operate_install_version.get()}')
         self.cf.write(open(JM_INI_PATH, 'w', encoding='utf-8'))
+        self.download_lock = 1
 
     def download_jmeter(self):
-        ''' 基于镜像URL下载JMeter '''
-        if self.operate_install_version.get() in ["未选择...", '']:
-            self.operate_message_text.set("操作 >> 请选择版本号!")
-        elif self.settings_mirror_url.get() in ["未选择...", '']:
-            self.operate_message_text.set("设置 >> 请选择镜像站!")
-        elif self.settings_download_path.get() in ["未选择...", '']:
-            self.operate_message_text.set("设置 >> 请选择下载路径!")
-        elif self.settings_install_path.get() in ["未选择...", '']:
-            self.operate_message_text.set("设置 >> 请选择安装路径!")
+        if self.download_lock:
+            self.download_lock = 0
+            ''' 基于镜像URL下载JMeter '''
+            if self.operate_install_version.get() in ["未选择...", '']:
+                self.operate_message_text.set("操作 >> 请选择版本号!")
+            elif self.settings_mirror_url.get() in ["未选择...", '']:
+                self.operate_message_text.set("设置 >> 请选择镜像站!")
+            elif self.settings_download_path.get() in ["未选择...", '']:
+                self.operate_message_text.set("设置 >> 请选择下载路径!")
+            elif self.settings_install_path.get() in ["未选择...", '']:
+                self.operate_message_text.set("设置 >> 请选择安装路径!")
+            else:
+                _t5 = threading.Thread(target=self.download_thread)
+                _t5.setDaemon(True)
+                _t5.start()
         else:
-            _t5 = threading.Thread(target=self.download_thread)
-            _t5.setDaemon(True)
-            _t5.start()
+            self.operate_message_text.set("正在下载中!")
 
     def download_progress(self, block_num, block_size, total_size):
         ''' 下载进度条 '''
@@ -420,6 +431,24 @@ class JMeterManagerUI(tk.Tk):
         self.operate_message_text_label.config(fg="green")
         self.operate_message_text.set("下载中...")
 
+    # 删除文件夹及其所有内容
+    def delete_folder(self, path):
+        dir_list = []
+        if os.path.exists(path):
+            for root, dirs, files in os.walk(path):
+                for file in files:
+
+                    os.remove(os.path.join(root, file))
+                for dir in dirs:
+                    dir_list.append(os.path.join(root, dir))
+            for dir in dir_list:
+                try:
+                    os.rmdir(dir)
+                except:
+                    dir_list.append(dir)
+            os.rmdir(path)
+            self.remove_lock = 1
+
     def remove_thread(self):
         '''  卸载JMeter '''
         version = self.operate_installed_version.get()
@@ -428,23 +457,38 @@ class JMeterManagerUI(tk.Tk):
         else:
             self.operate_message_text_label.config(fg="red")
             self.operate_message_text.set("正在卸载...")
-            remove_jmeter_path = eval(self.cf.get('installed', 'jmeter_paths'))[eval(self.cf.get('installed', 'versions')).index(version)]
-            os.remove(os.path.dirname(os.path.dirname(remove_jmeter_path)))
+            try:
+                remove_jmeter_path = eval(self.cf.get('installed', 'jmeter_paths'))[eval(self.cf.get('installed', 'versions')).index(version)]
+                if os.path.exists(remove_jmeter_path):
+                    delete_dir = os.path.dirname(os.path.dirname(remove_jmeter_path))
+                    self.delete_folder(path=delete_dir)
+                if not os.path.exists(remove_jmeter_path):
+                    # 卸载后更新已下载列表
+                    installed_versions = eval(self.cf.get('installed', 'versions'))
+                    if installed_versions: installed_versions.remove(self.operate_installed_version.get())
+                    self.cf.set('installed', 'versions', str(installed_versions))
+                    self.cf.write(open(JM_INI_PATH, 'w', encoding='utf-8'))
+                    self.operate_message_text_label.config(fg="green")
+                    self.operate_message_text.set("卸载已完成!")
+            except ValueError:
+                self.operate_message_text_label.config(fg="red")
+                self.operate_message_text.set("当前版本已不存在，请重新选择安装路径!")
 
-            # 卸载后更新已下载列表
-            installed_versions = eval(self.cf.get('installed', 'versions'))
-            if installed_versions: installed_versions.remove(self.operate_install_version.get())
-            self.cf.set('installed', 'versions', str(installed_versions))
 
     def remove_jmeter(self):
         ''' 卸载JMeter '''
-        if not eval(self.cf.get('installed', 'versions')) and not eval(self.cf.get('installed', 'jmeter_paths')):
-            _t6 = threading.Thread(target=self.remove_thread)
-            _t6.setDaemon(True)
-            _t6.start()
+        if self.remove_lock:
+            self.remove_lock = 0
+            if eval(self.cf.get('installed', 'versions')) and eval(self.cf.get('installed', 'jmeter_paths')):
+                _t6 = threading.Thread(target=self.remove_thread)
+                _t6.setDaemon(True)
+                _t6.start()
+            else:
+                self.operate_message_text_label.config(fg="red")
+                self.operate_message_text.set("操作 >> 请先卸载当前版本!")
         else:
             self.operate_message_text_label.config(fg="red")
-            self.operate_message_text.set("操作 >> 请先卸载当前版本!")
+            self.operate_message_text.set("正在卸载中!")
 
     def choose_download_path(self):
         ''' 选择下载JMeter的文件夹 '''
