@@ -420,12 +420,31 @@ class JMeterManagerUI(tk.Tk):
         self.operate_message_text_label.config(fg="green")
         self.operate_message_text.set("下载中...")
 
-    def remove_jmeter(self):
+    def remove_thread(self):
+        '''  卸载JMeter '''
+        version = self.operate_installed_version.get()
+        if version in ["未选择...", '']:
+            self.operate_message_text.set("操作 >> 请选择版本号再卸载!")
+        else:
+            self.operate_message_text_label.config(fg="red")
+            self.operate_message_text.set("正在卸载...")
+            remove_jmeter_path = eval(self.cf.get('installed', 'jmeter_paths'))[eval(self.cf.get('installed', 'versions')).index(version)]
+            os.remove(os.path.dirname(os.path.dirname(remove_jmeter_path)))
 
-        # 卸载后更新已下载列表
-        old_versions = list(self.cf.get('installed', 'versions'))
-        new_versions = old_versions.remove(self.operate_install_version.get())
-        self.cf.set('installed', 'versions', str(new_versions))
+            # 卸载后更新已下载列表
+            installed_versions = eval(self.cf.get('installed', 'versions'))
+            if installed_versions: installed_versions.remove(self.operate_install_version.get())
+            self.cf.set('installed', 'versions', str(installed_versions))
+
+    def remove_jmeter(self):
+        ''' 卸载JMeter '''
+        if not eval(self.cf.get('installed', 'versions')) and not eval(self.cf.get('installed', 'jmeter_paths')):
+            _t6 = threading.Thread(target=self.remove_thread)
+            _t6.setDaemon(True)
+            _t6.start()
+        else:
+            self.operate_message_text_label.config(fg="red")
+            self.operate_message_text.set("操作 >> 请先卸载当前版本!")
 
     def choose_download_path(self):
         ''' 选择下载JMeter的文件夹 '''
