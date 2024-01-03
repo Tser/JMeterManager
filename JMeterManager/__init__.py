@@ -10,9 +10,9 @@ from zipfile import ZipFile
 
 from configparser import ConfigParser
 
-import os, sys, platform, glob, threading, tkinter as tk, ctypes
+import os, sys, platform, threading, tkinter as tk, ctypes
 
-from tkinter import filedialog, messagebox, ttk, PhotoImage
+from tkinter import filedialog, ttk
 
 from tkinter.ttk import Progressbar
 
@@ -23,9 +23,6 @@ from urllib.request import urlretrieve, urlopen, Request
 from time import sleep
 
 from re import findall
-
-from winreg import OpenKey, QueryValueEx, SetValueEx, HKEY_LOCAL_MACHINE, KEY_WRITE, REG_SZ, REG_EXPAND_SZ, CreateKey, \
-    CloseKey, KEY_ALL_ACCESS
 
 CUR_DIR = os.path.dirname(os.path.realpath(__file__))
 

@@ -9,7 +9,6 @@
 from __init__ import os, \
                         JM_INI_PATH, \
                         platform, \
-                        glob, \
                         threading, \
                         Popen, \
                         PIPE, \
@@ -49,14 +48,14 @@ def finder_thread(path: str, path_list: list, version_list: list) -> None:
                     if os.path.exists(f'{dirpath}/jmeter.log'):
                         with open(f'{dirpath}/jmeter.log', 'r') as f: data = f.readlines(); f.close()
                         v = str(findall(': Version (.+)\n$', [d for d in data if ': Version ' in d][0])[0]).strip()
-                    version_list.append(v)
+                        version_list.append(v)
                     path_list.append(os.path.join(dirpath, filename))
                 except Exception as e:
                     pass
 
 def SET_JMETER_INSTALLED_VERSION(status) -> None:
     ''' 在指定安装路径下获取JMeter的列表 '''
-    status.set('正在获取已安装版本...')
+    # status.set('正在获取已安装版本...')
     path_list = []
     version_list = []
     cf.read(JM_INI_PATH, encoding='utf-8')
@@ -67,7 +66,7 @@ def SET_JMETER_INSTALLED_VERSION(status) -> None:
     cf.set('installed', 'jmeter_paths', str(path_list))
     cf.set('installed', 'versions', str(version_list))
     cf.write(open(JM_INI_PATH, 'w', encoding='utf-8'))
-    status.set('安装版本检测完成!')
+    # status.set('安装版本检测完成!')
 
 def SET_JMETER_INSTALL_VERSIONS(status):
     ''' 解析URL获取可下载的所有版本 '''

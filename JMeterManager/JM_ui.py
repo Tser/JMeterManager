@@ -13,27 +13,13 @@ from __init__ import ttk, \
                         PIPE, \
                         STDOUT, \
                         Progressbar, \
-                        PhotoImage, \
                         tk, \
                         CF_INIT, \
                         urlretrieve, \
                         filedialog, \
                         os, \
                         FAVICON_PATH, \
-                        BG_IMAGE_PATH, \
-                        JM_INI_PATH, \
-                        CreateKey, \
-                        OpenKey, \
-                        QueryValueEx, \
-                        SetValueEx, \
-                        HKEY_LOCAL_MACHINE, \
-                        KEY_WRITE, \
-                        KEY_ALL_ACCESS, \
-                        REG_SZ, \
-                        REG_EXPAND_SZ, \
-                        CloseKey, \
-                        sleep, \
-                        ctypes
+                        JM_INI_PATH
 
 from utils import SET_JMETER_INSTALLED_VERSION, SET_JMETER_INSTALL_VERSIONS, _SYSTEM_NAME_
 
@@ -239,18 +225,7 @@ class JMeterManagerUI(tk.Tk):
         self.settings_install_button = tk.Button(row_3_frame, text="选择路径", command=self.choose_install_path, width=10)
         self.settings_install_button.grid(row=0, column=2, padx=5, pady=10)
 
-        # row_4_frame:保存
-        # self.settings_save_button = tk.Button(
-        #                                         row_4_frame,
-        #                                         text="保   存",
-        #                                         command=self.save_settings,
-        #                                         width=10,
-        #                                         fg="white",
-        #                                         bg="green")
-        # self.settings_save_button.pack(side="bottom")
-
-        # row_5_frame:状态信息
-
+        # row_4_frame:状态信息
         self.settings_message_text.set("")
         self.settings_message_text_label = tk.Label(
                                                 row_4_frame,
@@ -258,41 +233,12 @@ class JMeterManagerUI(tk.Tk):
                                                 fg="red")
         self.settings_message_text_label.pack(side="bottom")
 
-    def title_refresh_thread(self):
-        ''' 循环修改标题内容 '''
-        while True:
-            self.title_text = self.title_text[1:] + self.title_text[0:1]
-            self.title(self.title_text)
-            sleep(0.5)
-
     def refresh_ui(self):
-        ''' 实时更新标题，类似于跑马灯 '''
-        try:
-            # 实时刷新标题
-            _t3 = threading.Thread(target=self.title_refresh_thread)
-            _t3.setDaemon(True)
-            _t3.start()
-
-            # 实时刷写安装版本
-            self.check_installed_list()
-            self.refresh_installed_version_data()
-            # _t4 = threading.Thread(target=)
-            # _t4.setDaemon(True)
-            # _t4.start()
-        except RuntimeError:
-            pass
-
-    # @main_requires_admin
-    def refresh_system_environment(self):
-        HWND_BROADCAST = 0xFFFF
-        WM_SETTINGCHANGE = 0x1A
-
-        SMTO_ABORTIFHUNG = 0x0002
-
-        result = ctypes.c_long()
-        SendMessageTimeoutW = ctypes.windll.user32.SendMessageTimeoutW
-        SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, u'Environment', SMTO_ABORTIFHUNG, 5000,
-                            ctypes.byref(result))
+        ''' 循环修改标题内容 '''
+        # while True:
+        self.title_text = self.title_text[1:] + self.title_text[0:1]
+        self.title(self.title_text)
+        self.after(500, self.refresh_ui)
 
     # @main_requires_admin
     def set_system_environment(self,
@@ -379,9 +325,6 @@ class JMeterManagerUI(tk.Tk):
             JMETER_PROPERTIES_PATH = f'{self.settings_install_path.get()}/apache-jmeter-{self.operate_install_version.get()}/bin/jmeter.properties'
             if os.path.exists(JMETER_PROPERTIES_PATH):
                 Popen(f'echo language=zh_CN>>{JMETER_PROPERTIES_PATH}', stdout=PIPE, shell=True)
-
-
-        # 可以将已安装版本修改为默认版本
 
         # 设置永久系统环境变量（windows使用winreg，其他系统使用直接写入/ect/profile和source命令）
         self.set_system_environment(
@@ -474,7 +417,6 @@ class JMeterManagerUI(tk.Tk):
                 self.operate_message_text_label.config(fg="red")
                 self.operate_message_text.set("当前版本已不存在，请重新选择安装路径!")
 
-
     def remove_jmeter(self):
         ''' 卸载JMeter '''
         if self.remove_lock:
@@ -532,10 +474,6 @@ class JMeterManagerUI(tk.Tk):
             self.check_installed_list()
         else:
             self.settings_install_path.set(self.cf.get('settings', 'install_path'))
-
-
-    def save_settings(self):
-        pass
 
     def refresh_install_version_data(self):
         self.cf.read(JM_INI_PATH, encoding='utf-8')
