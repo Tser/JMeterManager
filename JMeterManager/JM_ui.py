@@ -312,10 +312,10 @@ class JMeterManagerUI(tk.Tk):
             # CloseKey(write_env_key)
             # self.refresh_system_environment()
             if env_name:
-                Popen(f'setx {env_name} "{env_path}"', stdout=PIPE, stderr=STDOUT, shell=True, encoding='utf-8')
+                Popen(f'setx {env_name} "{env_path}"', stdout=PIPE, stderr=STDOUT, shell=False, encoding='utf-8')
             if add_path:
                 CMD = f'setx Path %Path%;"{env_path}{end_path}"' if end_path else f'setx Path %Path%;"{env_path}"'
-                Popen(CMD, stdout=PIPE, stderr=STDOUT, shell=True, encoding='utf-8')
+                Popen(CMD, stdout=PIPE, stderr=STDOUT, shell=False, encoding='utf-8')
         else:
             # 添加环境变量到/etc/profile并执行source命令
             if env_name:
@@ -336,15 +336,14 @@ class JMeterManagerUI(tk.Tk):
                              encoding='utf-8'
                              )
 
+        self.operate_message_text.set(f"【{self.operate_install_version.get()}】环境变量设置成功!")
+
     def download_thread(self):
         ''' 下载线程 '''
         _version = self.operate_install_version.get()
-        if not list(self.cf.get('installed', 'versions')):
-            self.check_installed_list()
-        if _version in ["未选择...", '']:
-            self.operate_message_text.set("请选择版本号!")
-        elif _version in list(self.cf.get('installed', 'versions')):
-            self.operate_message_text.set("版本已安装!")
+        if not eval(self.cf.get('installed', 'versions')): self.check_installed_list()
+        if _version in ["未选择...", '']: self.operate_message_text.set("请选择版本号!")
+        elif _version in eval(self.cf.get('installed', 'versions')): self.operate_message_text.set("版本已安装!")
         else:
             urlretrieve(self.settings_mirror_url.get() +
                         f'/apache-jmeter-{self.operate_install_version.get()}.zip',
@@ -367,7 +366,7 @@ class JMeterManagerUI(tk.Tk):
             # 更新已安装列表
             self.cf.read(JM_INI_PATH, encoding='utf-8')
             old_versions = eval(self.cf.get('installed', 'versions'))
-            new_versions = old_versions.append(self.operate_install_version.get())
+            new_versions = old_versions.append(self.operate_install_version.get()) if old_versions else [self.operate_install_version.get()]
             if new_versions: new_versions.sort(reverse=True)
             self.cf.set('installed', 'versions', str(new_versions))
             self.cf.write(open(JM_INI_PATH, 'w', encoding='utf-8'))
@@ -389,7 +388,6 @@ class JMeterManagerUI(tk.Tk):
             add_path=True,
             end_path='/bin'
         )
-        self.operate_message_text.set(f"【{self.operate_install_version.get()}】环境变量设置成功! 请在命令行执行【jmeter】")
 
         # 更新当前版本为新安装版本
         cmd_result = [v for v in Popen('java -version', shell=True, stdout=PIPE, stderr=STDOUT, encoding='utf-8').stdout.readlines() if 'version' in v][0].split(' ')

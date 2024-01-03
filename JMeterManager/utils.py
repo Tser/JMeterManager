@@ -45,7 +45,7 @@ def finder_thread(path: str, path_list: list, version_list: list) -> None:
             if filename == 'jmeter.bat':
                 CMD = f'cd /d "{dirpath}" && jmeter -v' if _SYSTEM_NAME_ == 'Windows' else f'cd {dirpath} && jmeter -v'
                 Popen(CMD, stdout=PIPE, shell=True,  stderr=STDOUT,encoding='utf-8')
-                _timeout_ = 10
+                _timeout_ = 2
                 while not os.path.exists(f'{dirpath}/jmeter.log') and _timeout_ >= 0: sleep(0.5); _timeout_ -= 0.5
                 if os.path.exists(f'{dirpath}/jmeter.log'):
                     with open(f'{dirpath}/jmeter.log', 'r') as f: data = f.readlines(); f.close()
