@@ -497,5 +497,5 @@ class JMeterManagerUI(tk.Tk):
         self.cf.read(JM_INI_PATH, encoding='utf-8')
         self.settings_mirror_url_list['values'] = eval(self.cf.get('settings', 'download_urls'))
 
-if __name__ == '__main__':
+def main():
     JMeterManagerUI()

@@ -1,5 +1,5 @@
 # JmeterManager
-JMeterManager（JMeter管理者）协助新用户可以安装不同版本的境且可以方便快捷的在不同版本之间切换
+JMeterManager（JMeter管理者）协助用户安装/卸载/切换不同版本的环境
 
 ## 使用介绍
 
@@ -35,3 +35,4 @@ JMeterManagerUI
 
 ------
 ### 使用视频
+<video src="https://v3-web.douyinvod.com/25f8afc74f6e4376f8f1ac49e3e9a386/6596a2a7/video/tos/cn/tos-cn-ve-15/okWyika9GAdKQersgIfbyVDzYNyu6prhAABSWE/?a=6383&ch=10&cr=3&dr=0&lr=all&cd=0%7C0%7C0%7C3&cv=1&br=97&bt=97&cs=0&ds=6&ft=LjhJEL998xIOuE0PH0P5H4eaciDXtLz4F_QEexuIbu~D1Inz&mime_type=video_mp4&qs=12&rc=OzU6Njo3aGllPDM3Njo1NkBpamhxZmQ6ZmZwcDMzNGkzM0BeNl8zLy4vNmIxXmIuMzJhYSNhaWtfcjQwbl5gLS1kLTBzcw%3D%3D&btag=e00030000&dy_q=1704366713&feature_id=46a7bb47b4fd1280f3d3825bf2b29388&l=202401041911533F524BF3BB610B0D6A6A" controls="controls" width="500" height="300"></video>

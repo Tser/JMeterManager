@@ -17,7 +17,7 @@ setup(
     # 指定版本号
     version=__version__,
     # 这是对当前项目的一个描述
-    description="JMeterManager（JMeter管理者）协助新用户可以安装不同版本的环境且可以方便快捷的在不同版本之间切换",
+    description="JMeterManager（JMeter管理者）协助用户安装/卸载/切换不同版本的环境",
     long_description=f.read(),
     long_description_content_type="text/markdown",
     # 作者是谁，
@@ -28,21 +28,21 @@ setup(
     url='https://github.com/Tser/JMeterManager',
     # 指定包名，即你需要打包的包名称，要实际在你本地存在哟，它会将指定包名下的所有"*.py"文件进行打包哟，但不会递归去拷贝所有的子包内容。
     # 综上所述，我们如果想要把一个包的所有"*.py"文件进行打包，应该在packages列表写下所有包的层级关系哟~这样就开源将指定包路径的所有".py"文件进行打包!
-    keywords="jmeter python JMeterManager",
+    keywords="jmeter python JMeterManager xiaobaiTser",
     packages=find_packages(),
     include_package_data=True,
     # 指定Python的版本
     python_requires='>=3.9',
     install_requires=[
-        'py_canoe',
+        '',
     ],
     entry_points={
         'console_scripts': [
-            'canoe_filter = canoe_filter.ui:main'
+            'xiaobaiJM = JMeterManager.JM_ui:main'
         ]
     },
     data_files=[
-        ('favicon', ['canoe_filter/favicon.ico']),
+        ('favicon', ['JMeterManager/image/favicon.ico']),
     ]
 )
 
