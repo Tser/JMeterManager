@@ -35,14 +35,12 @@ def GET_SYSTEM_DEVICES_LIST() -> list:
 
 def finder_thread(path: str, path_list: list, version_list: list) -> None:
     ''' 多线程查找文件 '''
-    # path_list.extend(glob.glob(path, recursive=True))
-    v = ''
     for dirpath, dirnames, filenames in os.walk(path):
         for filename in filenames:
             if filename == 'jmeter.bat':
                 try:
                     CMD = f'cd /d "{dirpath}" && jmeter -v' if _SYSTEM_NAME_ == 'Windows' else f'cd {dirpath} && jmeter -v'
-                    Popen(CMD, stdout=PIPE, shell=True,  stderr=STDOUT,encoding='utf-8')
+                    Popen(CMD, stdout=PIPE, shell=True,  stderr=STDOUT, encoding='utf-8')
                     _timeout_ = 2
                     while not os.path.exists(f'{dirpath}/jmeter.log') and _timeout_ >= 0: sleep(0.5); _timeout_ -= 0.5
                     if os.path.exists(f'{dirpath}/jmeter.log'):
@@ -55,7 +53,7 @@ def finder_thread(path: str, path_list: list, version_list: list) -> None:
 
 def SET_JMETER_INSTALLED_VERSION(status) -> None:
     ''' 在指定安装路径下获取JMeter的列表 '''
-    # status.set('正在获取已安装版本...')
+    status.set('正在获取已安装版本...')
     path_list = []
     version_list = []
     cf.read(JM_INI_PATH, encoding='utf-8')
@@ -66,7 +64,7 @@ def SET_JMETER_INSTALLED_VERSION(status) -> None:
     cf.set('installed', 'jmeter_paths', str(path_list))
     cf.set('installed', 'versions', str(version_list))
     cf.write(open(JM_INI_PATH, 'w', encoding='utf-8'))
-    # status.set('安装版本检测完成!')
+    status.set('安装版本检测完成!')
 
 def SET_JMETER_INSTALL_VERSIONS(status):
     ''' 解析URL获取可下载的所有版本 '''

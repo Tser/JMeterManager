@@ -2,50 +2,234 @@
 # -*- coding=utf-8 -*-
 '''
 @Author: xiaobaiTser
-@Time  : 2023/12/30 23:48
-@File  : JM_ui.py
+@Time  : 2024/1/10 1:07
+@File  : SoftwareManager.py
 '''
 
+
 from __init__ import ttk, \
-                        ZipFile, \
-                        threading, \
-                        Popen, \
-                        PIPE, \
-                        STDOUT, \
-                        Progressbar, \
-                        tk, \
-                        CF_INIT, \
-                        urlretrieve, \
-                        filedialog, \
-                        os, \
-                        FAVICON_PATH, \
-                        JM_INI_PATH
+    ZipFile, \
+    threading, \
+    Popen, \
+    PIPE, \
+    STDOUT, \
+    Progressbar, \
+    tk, \
+    CF_INIT, \
+    urlretrieve, \
+    filedialog, \
+    os, \
+    FAVICON_PATH, \
+    JM_INI_PATH, \
+    os, \
+    JM_INI_PATH, \
+    platform, \
+    threading, \
+    Popen, \
+    PIPE, \
+    STDOUT, \
+    sleep, \
+    findall, \
+    Request, \
+    urlopen, \
+    CF_INIT
 
 from utils import SET_JMETER_INSTALLED_VERSION, SET_JMETER_INSTALL_VERSIONS, _SYSTEM_NAME_
 from __version__ import __version__
 
+class Utils(object):
+    ''' 工具类 '''
+    _SYSTEM_NAME_ = platform.system()  # Windows、Linux、Darwin、Java...
+
+    cf = CF_INIT()
+
+    def GET_SYSTEM_DEVICES_LIST(self) -> list:
+        ''' 获取windows系统所有盘符 '''
+        return [i.replace(' ', '').replace('\n', '')
+                for i in os.popen('wmic logicaldisk get deviceid |findstr :').readlines()
+                if i.replace(' ', '').replace('\n', '') != '']
+
+    def finder_thread(self, path: str, path_list: list, version_list: list) -> None:
+        ''' 多线程查找文件 '''
+        for dirpath, dirnames, filenames in os.walk(path):
+            for filename in filenames:
+                if filename == 'jmeter.bat':
+                    try:
+                        CMD = f'cd /d "{dirpath}" && jmeter -v' if _SYSTEM_NAME_ == 'Windows' else f'cd {dirpath} && jmeter -v'
+                        Popen(CMD, stdout=PIPE, shell=True,  stderr=STDOUT, encoding='utf-8')
+                        _timeout_ = 2
+                        while not os.path.exists(f'{dirpath}/jmeter.log') and _timeout_ >= 0: sleep(0.5); _timeout_ -= 0.5
+                        if os.path.exists(f'{dirpath}/jmeter.log'):
+                            with open(f'{dirpath}/jmeter.log', 'r') as f: data = f.readlines(); f.close()
+                            v = str(findall(': Version (.+)\n$', [d for d in data if ': Version ' in d][0])[0]).strip()
+                            version_list.append(v)
+                        path_list.append(os.path.join(dirpath, filename))
+                    except Exception as e:
+                        pass
+
+    def SET_JMETER_INSTALLED_VERSION(self, status) -> None:
+        ''' 在指定安装路径下获取JMeter的列表 '''
+        status.set('正在获取已安装版本...')
+        path_list = []
+        version_list = []
+        cf.read(JM_INI_PATH, encoding='utf-8')
+        _t = threading.Thread(target=self.finder_thread, args=(cf.get('settings', 'install_path'), path_list, version_list))
+        # _t.setDaemon(True)
+        _t.start()
+        _t.join()
+        cf.set('installed', 'jmeter_paths', str(path_list))
+        cf.set('installed', 'versions', str(version_list))
+        cf.write(open(JM_INI_PATH, 'w', encoding='utf-8'))
+        status.set('安装版本检测完成!')
+
+    def SET_JMETER_INSTALL_VERSIONS(self, status):
+        ''' 解析URL获取可下载的所有版本 '''
+        status.set('正在获取全部版本号...')
+        cf.read(JM_INI_PATH, encoding='utf-8')
+        urls_url = cf.get('settings', 'download_urls')
+        for url in eval(urls_url):
+            try:
+                HtmlResponse = urlopen(
+                    Request(
+                        url,
+                        headers={
+                            'User-Agent':
+                                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '+ \
+                                'Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0'
+                        })
+                ).read().decode('utf-8')
+                versions = findall('<a href="apache-jmeter-(.+).zip"', HtmlResponse)
+                # versions.sort(reverse=True)
+                cf.set('install', 'archive_versions', str(versions)) \
+                    if url.startswith('https://archive.apache.org') \
+                    else cf.set('install', 'mirror_versions', str(versions))
+                cf.write(open(JM_INI_PATH, 'w', encoding='utf-8'))
+                status.set('版本号获取已完成!')
+            except Exception as e:
+                status.set(f'获取版本号失败! {e}')
+                break
+
+
+class SettingsUI(object):
+    ''' 设置类
+    [current]
+    jdk_version =
+    jmeter_version =
+    jmeter_home =
+    jmeter_plugin_version =
+
+    [install]
+    archive_versions = ['2.10', '2.11', '2.12', '2.13', '2.6', '2.7', '2.8', '2.9', '3.0', '3.1', '3.2', '3.3', '4.0', '5.0', '5.1.1', '5.1', '5.2.1', '5.2', '5.3', '5.4.1', '5.4.2', '5.4.3', '5.4', '5.5', '5.6.1', '5.6.2', '5.6.3', '5.6']
+    mirror_versions = ['5.5', '5.6.1', '5.6.2', '5.6.3', '5.6']
+
+    [installed]
+    jmeter_paths = ['D:/jmeter\\apache-jmeter-5.5\\bin\\jmeter.bat', 'D:/jmeter\\apache-jmeter-5.6\\bin\\jmeter.bat', 'D:/jmeter\\apache-jmeter-5.6.1\\bin\\jmeter.bat', 'D:/jmeter\\apache-jmeter-5.6.2\\bin\\jmeter.bat', 'D:/jmeter\\apache-jmeter-5.6.3\\bin\\jmeter.bat']
+    versions = ['5.5', '5.6', '5.6.1', '5.6.2', '5.6.3']
+
+    [settings]
+    download_urls = ['https://archive.apache.org/dist/jmeter/binaries/', 'https://mirrors.aliyun.com/apache/jmeter/binaries/', 'https://mirrors.tuna.tsinghua.edu.cn/apache/jmeter/binaries/']
+    download_path = C:\Users\Administrator/Downloads/
+    install_path = D:/jmeter
+    '''
+    def __init__(self):
+        self.software_urls = {
+            'python': ['https://www.python.org/ftp/python/3.8.0/python-3.8.0-amd64.exe', 'https://www.python.org/ftp/python/3.8.0/python-3.8.0-embed-amd64.zip'],
+            'openjdk': ['https://download.java.net/java/GA/jdk11/9/GPL/openjdk-11.0.2_windows-x64_bin.zip', 'https://download.java.net/java/GA/jdk11/9/GPL/openjdk-11.0.2_windows-x64_bin.zip'],
+            'jmeter': ['https://archive.apache.org/dist/jmeter/binaries/', 'https://mirrors.aliyun.com/apache/jmeter/binaries/', 'https://mirrors.tuna.tsinghua.edu.cn/apache/jmeter/binaries/'],
+        }
+
+    @property
+    def install_versions(self):
+        return self._install_versions
+
+    @install_versions.setter
+    def install_versions(self, versions: list):
+        versions.remove('')
+        versions = list(set(versions))
+        versions.sort(reverse=True)
+        self._install_versions = versions
+
+    @property
+    def installed_paths(self):
+        return self._installed_paths
+
+    @installed_paths.setter
+    def installed_paths(self, paths: list):
+        paths.remove('')
+        paths = list(set(paths))
+        self._installed_paths = paths
+
+    @property
+    def installed_versions(self):
+        return self._installed_versions
+
+    @installed_versions.setter
+    def installed_versions(self, versions: list):
+        versions.remove('')
+        versions = list(set(versions))
+        self._installed_versions = versions
+
+    @property
+    def download_urls(self):
+        return self._download_urls
+
+    @download_urls.setter
+    def download_urls(self, urls: list):
+        urls.remove('')
+        urls = list(set(urls))
+        self._download_urls = urls
+
+    @property
+    def download_path(self):
+        return self._download_path
+
+    @download_path.setter
+    def download_path(self, path: str):
+        self._download_path = path
+
+    @property
+    def install_path(self):
+        return self._install_path
+
+    @install_path.setter
+    def install_path(self, path: str):
+        self._install_path = path
+
+
 class JMeterManagerUI(tk.Tk):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.title_text = f"JMeterManager·@xiaobaiTser v{__version__}      "
+        self.title_text = f"SoftwareManager·@xiaobaiTser v{__version__}      "
         self.title(self.title_text)
         self.iconbitmap(FAVICON_PATH)
         # 窗口设置为自适应
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
         self.resizable(False, False)
-        self.cf = CF_INIT()
-        self.cf.read(JM_INI_PATH, encoding='utf-8')
+        self.check_software_status = tk.StringVar()
+        self.check_software_status.set("Python")
         self.operate_message_text = tk.StringVar()
         self.settings_message_text = self.operate_message_text
         self.create_widgets()
+        self.settings_init()
         self.run()
-        self.after(500, self.refresh_ui)
+        self.after(500, self.refresh_title)
         self.mainloop()
+
+    def settings_init(self):
+        ''' 初始化 '''
+        self.cf = CF_INIT()
+        self.cf.read(JM_INI_PATH, encoding='utf-8')
+        self.settings = SettingsUI()
+        self.settings.install_versions = self.cf.get('install', 'archive_versions').split(',')
+        self.settings.installed_paths = self.cf.get('installed', 'jmeter_paths').split(',')
+        self.settings.installed_versions = self.cf.get('installed', 'versions').split(',')
+        self.settings.download_urls = self.cf.get('settings', 'download_urls').split(',')
+        self.settings.download_path = self.cf.get('settings', 'download_path')
+        self.settings.install_path = self.cf.get('settings', 'install_path')
 
     def run(self):
         ''' 初始化 '''
-        CF_INIT()
         self.check_install_list()
         self.refresh_install_version_data()
         self.check_installed_list()
@@ -91,6 +275,8 @@ class JMeterManagerUI(tk.Tk):
     def create_operate(self):
         ''' 操作页 '''
         # 设置多行Frame
+        software_manager_frame = tk.Frame(self.operate, height=20)
+        software_manager_frame.pack()
         row_1_frame = tk.Frame(self.operate, height=20)
         row_1_frame.pack()
         row_2_frame = tk.Frame(self.operate, height=20)
@@ -99,6 +285,26 @@ class JMeterManagerUI(tk.Tk):
         row_3_frame.pack()
         row_4_frame = tk.Frame(self.operate, height=20)
         row_4_frame.pack()
+
+        # software_manager_frame
+        sm_left_frame = tk.Frame(software_manager_frame, width=100)
+        sm_left_frame.grid(row=0, column=0, padx=5, pady=10)
+        sm_center_frame = tk.Frame(software_manager_frame, width=100)
+        sm_center_frame.grid(row=0, column=1, padx=5, pady=10)
+        sm_right_frame = tk.Frame(software_manager_frame, width=100)
+        sm_right_frame.grid(row=0, column=2, padx=5, pady=10)
+
+        # python_label = tk.Label(sm_left_frame, text="Python")
+        # python_label.grid(row=0, column=0, padx=5, pady=10)
+        tk.Radiobutton(sm_left_frame, variable=self.check_software_status,
+                       text="Python", value="Python",
+                       command=self.check_software).pack()
+        tk.Radiobutton(sm_center_frame, variable=self.check_software_status,
+                       text="OpenJDK", value="OpenJDK",
+                       command=self.check_software).pack()
+        tk.Radiobutton(sm_right_frame, variable=self.check_software_status,
+                       text="JMeter", value="JMeter",
+                       command=self.check_software).pack()
 
         # row_1_frame
         self.operate_install_label = tk.Label(row_1_frame, text="可安装版本：")
@@ -116,12 +322,12 @@ class JMeterManagerUI(tk.Tk):
                                                          width=28)
         self.operate_install_version_list.grid(row=0, column=1, padx=5, pady=10)
         self.operate_download_button = tk.Button(
-                                            row_1_frame,
-                                            text="下   载",
-                                            command=self.download_jmeter,
-                                            width=15,
-                                            bg="green",
-                                            fg="white")
+            row_1_frame,
+            text="下   载",
+            command=self.download_jmeter,
+            width=15,
+            bg="green",
+            fg="white")
         self.operate_download_button.grid(row=0, column=2, padx=5, pady=10)
 
         # row_2_frame
@@ -130,21 +336,21 @@ class JMeterManagerUI(tk.Tk):
         self.operate_installed_version = tk.StringVar()
         self.operate_installed_version.set("未选择...")
         self.operate_installed_version_list = ttk.Combobox(
-                                            row_2_frame,
-                                            values=eval(self.cf.get('installed', 'versions')),
-                                            textvariable=self.operate_installed_version,
-                                            postcommand=self.refresh_installed_version_data,
-                                            width=28)
+            row_2_frame,
+            values=eval(self.cf.get('installed', 'versions')),
+            textvariable=self.operate_installed_version,
+            postcommand=self.refresh_installed_version_data,
+            width=28)
         self.operate_installed_version_list.grid(row=1, column=1, padx=5, pady=10)
         self.operate_remove_button = tk.Button(
-                                            row_2_frame,
-                                            text="卸   载",
-                                            command=self.remove_jmeter,
-                                            width=15,
-                                            bg="white",
-                                            fg="red",
-                                            # state="disabled"
-                                            )
+            row_2_frame,
+            text="卸   载",
+            command=self.remove_jmeter,
+            width=15,
+            bg="white",
+            fg="red",
+            # state="disabled"
+        )
         self.operate_remove_button.grid(row=1, column=2, padx=5, pady=10)
 
         # row_3_frame
@@ -153,8 +359,8 @@ class JMeterManagerUI(tk.Tk):
         self.operate_progressbar_proportion = tk.StringVar()
         self.operate_progressbar_proportion.set("0%")
         self.operate_progressbar_proportion_label = tk.Label(
-                                            row_3_frame,
-                                            textvariable=self.operate_progressbar_proportion)
+            row_3_frame,
+            textvariable=self.operate_progressbar_proportion)
         self.operate_progressbar_proportion_label.grid(row=0, column=1, padx=5, pady=10)
 
         # row_4_frame
@@ -196,10 +402,10 @@ class JMeterManagerUI(tk.Tk):
         self.settings_download_path = tk.StringVar()
         self.settings_download_path.set(self.cf.get('settings', 'download_path'))
         self.settings_download_path_entry = tk.Entry(
-                                                row_2_frame,
-                                                textvariable=self.settings_download_path,
-                                                width=25,
-                                                fg='black')
+            row_2_frame,
+            textvariable=self.settings_download_path,
+            width=25,
+            fg='black')
         self.settings_download_path_entry.grid(row=0, column=1, padx=5, pady=10)
         self.settings_download_path_entry.bind("<Return>", self.choose_download_path_return)
         self.settings_download_path_entry.bind("<FocusIn>", self.choose_download_path_focusin)
@@ -214,10 +420,10 @@ class JMeterManagerUI(tk.Tk):
         self.settings_install_path = tk.StringVar()
         self.settings_install_path.set(self.cf.get('settings', 'install_path'))
         self.settings_install_path_entry = tk.Entry(
-                                                row_3_frame,
-                                                textvariable=self.settings_install_path,
-                                                width=25,
-                                                fg='black')
+            row_3_frame,
+            textvariable=self.settings_install_path,
+            width=25,
+            fg='black')
         self.settings_install_path_entry.grid(row=0, column=1, padx=5, pady=10)
         self.settings_install_path_entry.bind("<Return>", self.choose_install_path_return)
         self.settings_install_path_entry.bind("<FocusIn>", self.choose_install_path_focusin)
@@ -229,17 +435,21 @@ class JMeterManagerUI(tk.Tk):
         # row_4_frame:状态信息
         self.settings_message_text.set("")
         self.settings_message_text_label = tk.Label(
-                                                row_4_frame,
-                                                textvariable=self.settings_message_text,
-                                                fg="red")
+            row_4_frame,
+            textvariable=self.settings_message_text,
+            fg="red")
         self.settings_message_text_label.pack(side="bottom")
 
-    def refresh_ui(self):
+    def check_software(self):
+        ''' 选择软件 '''
+        print(self.check_software_status.get())
+
+    def refresh_title(self):
         ''' 循环修改标题内容 '''
         # while True:
         self.title_text = self.title_text[1:] + self.title_text[0:1]
         self.title(self.title_text)
-        self.after(500, self.refresh_ui)
+        self.after(500, self.refresh_title)
 
     # @main_requires_admin
     def set_system_environment(self,
@@ -250,18 +460,6 @@ class JMeterManagerUI(tk.Tk):
         ''' 设置系统环境，windows使用winreg,linux使用/etc/profile '''
         env_name = env_name.upper().strip()
         if _SYSTEM_NAME_ == "Windows":
-            # REG_PATH = r'SYSTEM\\ControlSet001\\Control\\Session Manager\\Environment'
-            # write_env_key = OpenKey(HKEY_LOCAL_MACHINE, REG_PATH, 0, access=KEY_ALL_ACCESS)
-            # path_env = QueryValueEx(write_env_key, 'path')[0]
-            #
-            # if env_name:
-            #     # add key
-            #     SetValueEx(write_env_key, env_name, 0, REG_SZ, env_path)
-            # if add_path:
-            #     env_value = f'{path_env};%{env_name}%{end_path}' if env_name else f'{path_env};{env_path}'
-            #     SetValueEx(write_env_key, 'path', 0, REG_EXPAND_SZ, env_value)
-            # CloseKey(write_env_key)
-            # self.refresh_system_environment()
             if env_name:
                 Popen(f'setx {env_name} "{env_path}"', stdout=PIPE, stderr=STDOUT, shell=False, encoding='utf-8')
             if add_path:
@@ -281,11 +479,11 @@ class JMeterManagerUI(tk.Tk):
                     f.flush()
                     f.close()
             Popen(f'source /etc/profile',
-                             shell=True,
-                             stdout=PIPE,
-                             stderr=STDOUT,
-                             encoding='utf-8'
-                             )
+                  shell=True,
+                  stdout=PIPE,
+                  stderr=STDOUT,
+                  encoding='utf-8'
+                  )
 
         self.operate_message_text.set(f"【{self.operate_install_version.get()}】环境变量设置成功!")
 
@@ -306,7 +504,7 @@ class JMeterManagerUI(tk.Tk):
             self.operate_message_text.set("下载完成!")
 
             # 解压下载的压缩包到指定目录
-            ZipFile(f'{self.settings_download_path.get()}/apache-jmeter-{self.operate_install_version.get()}.zip').\
+            ZipFile(f'{self.settings_download_path.get()}/apache-jmeter-{self.operate_install_version.get()}.zip'). \
                 extractall(self.settings_install_path.get())
             self.operate_message_text.set("解压完成!")
 
