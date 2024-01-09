@@ -39,15 +39,13 @@ from __version__ import __version__
 
 class Utils(object):
     ''' 工具类 '''
-    _SYSTEM_NAME_ = platform.system()  # Windows、Linux、Darwin、Java...
+    def __init__(self):
+        pass
 
-    cf = CF_INIT()
-
-    def GET_SYSTEM_DEVICES_LIST(self) -> list:
-        ''' 获取windows系统所有盘符 '''
-        return [i.replace(' ', '').replace('\n', '')
-                for i in os.popen('wmic logicaldisk get deviceid |findstr :').readlines()
-                if i.replace(' ', '').replace('\n', '') != '']
+    @staticmethod
+    def SYSTEM_NAME() -> str:
+        ''' 获取系统名称 '''
+        return platform.system()  # Windows、Linux、Darwin、Java...
 
     def finder_thread(self, path: str, path_list: list, version_list: list) -> None:
         ''' 多线程查找文件 '''
