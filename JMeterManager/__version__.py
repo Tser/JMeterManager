@@ -6,4 +6,4 @@
 @File  : __version__.py
 '''
 
-__version__ = '.'.join(map(str, (1, 1, 0)))
+__version__ = '.'.join(map(str, (1, 2, 0)))
