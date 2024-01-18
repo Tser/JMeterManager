@@ -110,7 +110,6 @@ class SoftwareManagerUI(tk.Tk):
         self.SYSTEM_NAME = platform.system()  # Windows、Linux、Darwin、Java...
         self.create_widgets()
         self.settings_init()
-        self.run()
         self.after(500, self.refresh_title)
         self.mainloop()
 
@@ -122,9 +121,6 @@ class SoftwareManagerUI(tk.Tk):
         self.settings.download_urls = self.setting.download_urls
         self.settings.download_path = self.setting.download_path
         self.settings.install_path = self.setting.install_path
-
-    def run(self):
-        ''' 初始化 '''
         self.check_install_list()
         self.refresh_install_version_data()
         self.check_installed_list()
@@ -194,10 +190,10 @@ class SoftwareManagerUI(tk.Tk):
                        command=self.check_software).pack()
         tk.Radiobutton(sm_center_frame, variable=self.check_software_status,
                        text="OpenJDK", value="OpenJDK",
-                       command=self.check_software).pack()
+                       command=self.check_software, state='disable').pack()
         tk.Radiobutton(sm_right_frame, variable=self.check_software_status,
                        text="Python", value="Python",
-                       command=self.check_software).pack()
+                       command=self.check_software, state='disable').pack()
 
         # row_1_frame
         self.operate_install_label = tk.Label(row_1_frame, text="可安装版本：")
@@ -321,10 +317,13 @@ class SoftwareManagerUI(tk.Tk):
         self.settings_install_button = tk.Button(row_3_frame, text="选择路径", command=self.choose_install_path, width=10)
         self.settings_install_button.grid(row=0, column=2, padx=5, pady=10)
 
-        # row_4_frame:状态信息
+        # row_4_frame:空行
+        tk.Label(row_4_frame).pack()
+
+        # row_5_frame:状态信息
         self.settings_message_text.set("")
         self.settings_message_text_label = tk.Label(
-            row_4_frame,
+            row_5_frame,
             textvariable=self.settings_message_text,
             fg="red")
         self.settings_message_text_label.pack(side="bottom")
