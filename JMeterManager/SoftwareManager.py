@@ -634,7 +634,10 @@ class SoftwareManagerUI(tk.Tk):
                 break
 
 def main():
-    SoftwareManagerUI()
+    try:
+        SoftwareManagerUI()
+    except KeyboardInterrupt:
+        exit(0)
 
 if __name__ == '__main__':
     main()
