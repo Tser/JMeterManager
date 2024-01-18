@@ -6,35 +6,27 @@
 @File  : SoftwareManager.py
 '''
 
+from zipfile import ZipFile
 
-from __init__ import ttk, \
-    ZipFile, \
-    Progressbar, \
-    tk, \
-    urlretrieve, \
-    filedialog, \
-    FAVICON_PATH, \
-    os, \
-    platform, \
-    threading, \
-    Popen, \
-    PIPE, \
-    STDOUT, \
-    sleep, \
-    findall, \
-    Request, \
-    urlopen
+import os, platform, threading, tkinter as tk
+
+from tkinter import filedialog, ttk
+
+from tkinter.ttk import Progressbar
+
+from subprocess import Popen, PIPE, STDOUT
+
+from urllib.request import urlretrieve, urlopen, Request
+
+from time import sleep
+
+from re import findall
+
+CUR_DIR = os.path.dirname(os.path.realpath(__file__))
+
+FAVICON_PATH = os.path.join(CUR_DIR, 'image/favicon.ico')
 
 from __version__ import __version__
-
-class Utils(object):
-    ''' 工具类 '''
-    def __init__(self):
-        self.setting = SettingsUI()
-
-
-
-
 
 class SettingsUI(object):
     def __init__(self):
@@ -109,7 +101,7 @@ class SettingsUI(object):
         self._install_path = path
 
 
-class JMeterManagerUI(tk.Tk):
+class SoftwareManagerUI(tk.Tk):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.title_text = f"SoftwareManager·@xiaobaiTser v{__version__}      "
@@ -348,8 +340,11 @@ class JMeterManagerUI(tk.Tk):
 
     def check_software(self):
         ''' 选择软件 '''
-        '''  '''
-        print(self.check_software_status.get())
+        if 'jmeter' ==  self.check_software_status.get().lower():
+            self.operate_message_text.set(f'选择了：{self.check_software_status.get()}')
+        else:
+            self.operate_message_text.set(f'选择了：{self.check_software_status.get()}，暂不支持下载安装！')
+
 
     def refresh_title(self):
         ''' 循环修改标题内容 '''
@@ -586,8 +581,8 @@ class JMeterManagerUI(tk.Tk):
 
     def finder_thread(self, path: str) -> None:
         ''' 多线程查找文件 '''
-        self.operate_message_text.set("正在查找...")
-        print('path:', path)
+        # self.operate_message_text.set("正在查找...")
+        _finder_status = False
         for dirpath, dirnames, filenames in os.walk(path):
             for filename in filenames:
                 if filename == 'jmeter.bat':
@@ -602,9 +597,12 @@ class JMeterManagerUI(tk.Tk):
                             if v not in self.setting.installed_versions: self.setting.installed_versions.append(v)
                         if os.path.join(dirpath, filename) not in self.setting.installed_paths:
                             self.setting.installed_paths.append(os.path.join(dirpath, filename))
-                        self.operate_message_text.set("查找已完成！")
+                        _finder_status = True
+                        self.operate_message_text.set("查找安装版本ing...")
                     except Exception as e:
-                        self.operate_message_text.set(f"查找失败！{e}")
+                        _finder_status = False
+                        self.operate_message_text.set(f"查找安装版本已失败！{e}")
+        if _finder_status: self.operate_message_text.set("查找安装版本已完成！")
 
     def SET_JMETER_INSTALLED_VERSION(self) -> None:
         ''' 在指定安装路径下获取JMeter的列表 '''
@@ -629,7 +627,6 @@ class JMeterManagerUI(tk.Tk):
                         })
                 ).read().decode('utf-8')
                 versions = findall('<a href="apache-jmeter-(.+).zip"', HtmlResponse)
-                # versions.sort(reverse=True)
                 self.setting.install_versions = versions
                 self.operate_message_text.set('版本号获取已完成!')
             except Exception as e:
@@ -637,7 +634,7 @@ class JMeterManagerUI(tk.Tk):
                 break
 
 def main():
-    JMeterManagerUI()
+    SoftwareManagerUI()
 
 if __name__ == '__main__':
     main()
