@@ -7,26 +7,18 @@
 '''
 
 from zipfile import ZipFile
-
 import os, platform, threading, tkinter as tk
-
 from tkinter import filedialog, ttk
-
 from tkinter.ttk import Progressbar
-
 from subprocess import Popen, PIPE, STDOUT
-
 from urllib.request import urlretrieve, urlopen, Request
-
 from time import sleep
-
 from re import findall
 
 CUR_DIR = os.path.dirname(os.path.realpath(__file__))
-
 FAVICON_PATH = os.path.join(CUR_DIR, 'image/favicon.ico')
 
-from __version__ import __version__
+__version__ = '.'.join(map(str, (1, 2, 0)))
 
 class SettingsUI(object):
     def __init__(self):
@@ -41,7 +33,6 @@ class SettingsUI(object):
         self._install_versions = []
         self._installed_paths = []
         self._installed_versions = []
-
 
     @property
     def install_versions(self):
